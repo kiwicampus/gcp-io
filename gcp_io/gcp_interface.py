@@ -242,6 +242,8 @@ class GCPInterface(object):
             be [cv2.IMWRITE_JPEG_QUALITY, 80]. Defaults to None.
         """
         ext = Path(dst_file).suffix
+        # change to BGR because cv2.imencode expects BGR
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         if encode_args:
             retval, encoded_bytes = cv2.imencode(ext, image, encode_args)
         else:
