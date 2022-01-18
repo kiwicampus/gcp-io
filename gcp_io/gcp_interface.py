@@ -191,21 +191,20 @@ class GCPInterface(object):
         frames: tp.List[np.ndarray],
         fps: int = 30,
         format: str = "mp4",
-        fourcc: str = "MP4V",
+        **kwargs,
     ):
         """! Writes a video to a local file, remote file or BytesIO object.
         For remote file only GCP storage is supported.
         @param dst_file (tp.Union[str, BytesIO]) Path string or BytesIO object.
-        @param frames (tp.List[np.ndarray]) Video list of frames.
+        @param frames (tp.List[np.ndarray]) Video list of frames in RGB.
         @param fps (int, optional) Desired FPS. Defaults to 30.
         @param format (str, optional) Format of the video in case dst_file is
             a BytesIO object. Defaults to "mp4".
-        @param fourcc (str, optional) Codec used by openCV. Defaults to "MP4V".
         """
         if isinstance(dst_file, BytesIO):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 dst_path = os.path.join(tmp_dir, f"video.{format}")
-                write_video(dst_path, frames, fps, fourcc)
+                write_video(dst_path, frames, fps, **kwargs)
                 with open(dst_path, "rb") as f:
                     dst_file.write(f.read())
 
@@ -213,11 +212,11 @@ class GCPInterface(object):
         elif "gs://" in dst_file:
             video_bytes = BytesIO()
             format = Path(dst_file).suffix[1:]
-            self.write_video(video_bytes, frames, fps, format, fourcc)
-            self.upload_data(dst_file, video_bytes.getvalue(), f"video/{format}")
-            # upload_data(dst_file, video_bytes.getvalue(), "video/mpeg")
+            self.write_video(video_bytes, frames, fps, format, **kwargs)
+            self.upload_data_to_gcs(dst_file, video_bytes.getvalue(), f"video/{format}")
+            # self.upload_data_to_gcs(dst_file, video_bytes.getvalue(), "video/mpeg")
         else:
-            write_video(dst_file, frames, fps, fourcc)
+            write_video(dst_file, frames, fps, **kwargs)
 
     extension_to_content_type = {
         ".png": "image/png",

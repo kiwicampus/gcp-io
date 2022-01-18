@@ -3,7 +3,7 @@ import re
 import typing as tp
 from functools import partial
 
-import cv2
+import imageio
 import numpy as np
 import yaml
 
@@ -12,25 +12,17 @@ def write_video(
     dst_file: str,
     frames: tp.List[np.ndarray],
     fps: int = 30,
-    fourcc: str = "MP4V",
+    **kwargs,
 ):
     """! Writes the provided list of frames (video) to a local video file.
     @param dst_file (str) Full destination video file.
-    @param frames (tp.List[np.ndarray]) List of video frames.
+    @param frames (tp.List[np.ndarray]) List of video frames in RGB.
     @param fps (int, optional) Desired FPS of the video. Defaults to 30.
-    @param fourcc (str, optional) OpenCV VideoWriter codec. Defaults to "MP4V".
     """
-    video_writer = None
-    for img in frames:
-        if video_writer is None:
-            video_writer = cv2.VideoWriter(
-                dst_file,
-                cv2.VideoWriter_fourcc(*fourcc),
-                fps,
-                img.shape[:2][::-1],
-            )
-        video_writer.write(img)
-    video_writer.release()
+    with imageio.get_writer(dst_file, fps=fps, **kwargs) as writer:
+        for image in frames:
+            writer.append_data(image)
+
 
 
 def read_yaml(filename: str) -> tp.Dict[str, tp.Any]:
