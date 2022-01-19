@@ -213,8 +213,8 @@ class GCPInterface(object):
             video_bytes = BytesIO()
             format = Path(dst_file).suffix[1:]
             self.write_video(video_bytes, frames, fps, format, **kwargs)
-            self.upload_data_to_gcs(dst_file, video_bytes.getvalue(), f"video/{format}")
-            # self.upload_data_to_gcs(dst_file, video_bytes.getvalue(), "video/mpeg")
+            self.upload_data(dst_file, video_bytes.getvalue(), f"video/{format}")
+            # self.upload_data(dst_file, video_bytes.getvalue(), "video/mpeg")
         else:
             write_video(dst_file, frames, fps, **kwargs)
 
