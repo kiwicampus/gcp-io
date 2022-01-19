@@ -24,7 +24,6 @@ def write_video(
             writer.append_data(image)
 
 
-
 def read_yaml(filename: str) -> tp.Dict[str, tp.Any]:
     """!
 

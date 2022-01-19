@@ -15,5 +15,12 @@ with open("README.md", "r") as readme:
         packages=find_packages(),
         package_data={},
         include_package_data=True,
-        install_requires=["numpy", "pyyaml", "google-cloud-storage", "opencv-python", "imageio"],
+        install_requires=[
+            "numpy",
+            "pyyaml",
+            "google-cloud-storage",
+            "opencv-python-headless",
+            "imageio",
+            "imageio-ffmpeg"
+        ],
     )
