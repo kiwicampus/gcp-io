@@ -21,6 +21,6 @@ with open("README.md", "r") as readme:
             "google-cloud-storage",
             # "opencv-python-headless",
             "imageio",
-            "imageio-ffmpeg"
+            "imageio-ffmpeg",
         ],
     )

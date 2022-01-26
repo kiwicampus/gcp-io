@@ -185,6 +185,16 @@ class GCPInterface(object):
         with open(dst_file, "wb") as f:
             f.write(content_bytes)
 
+    def upload_file(self, local_file: str, gcs_file: str):
+        """Uploads a local file to google cloud storage
+        Args:
+            local_file (str): Full path to the local file
+            gcs_file (str): Full path to the bucket file
+        """
+        bucket_name, file_path = get_bucket_and_path(gcs_file)
+        bucket = self.client.bucket(bucket_name)
+        bucket.blob(file_path).upload_from_filename(local_file)
+
     def write_video(
         self,
         dst_file: tp.Union[str, BytesIO],
