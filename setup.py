@@ -19,7 +19,7 @@ with open("README.md", "r") as readme:
             "numpy",
             "pyyaml",
             "google-cloud-storage",
-            "opencv-python-headless",
+            # "opencv-python-headless",
             "imageio",
             "imageio-ffmpeg"
         ],
