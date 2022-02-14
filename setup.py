@@ -20,7 +20,7 @@ with open("README.md", "r") as readme:
             "pyyaml",
             "google-cloud-storage",
             # "opencv-python-headless",
-            "imageio",
-            "imageio-ffmpeg",
+            "imageio<=2.10.0",
+            "imageio-ffmpeg<=0.4.0",
         ],
     )

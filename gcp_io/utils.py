@@ -1,7 +1,7 @@
 import hashlib
 import re
-import typing as tp
 from functools import partial
+from typing import Any, Dict, List, Tuple
 
 import imageio
 import numpy as np
@@ -10,13 +10,13 @@ import yaml
 
 def write_video(
     dst_file: str,
-    frames: tp.List[np.ndarray],
+    frames: List[np.ndarray],
     fps: int = 30,
     **kwargs,
 ):
     """! Writes the provided list of frames (video) to a local video file.
     @param dst_file (str) Full destination video file.
-    @param frames (tp.List[np.ndarray]) List of video frames in RGB.
+    @param frames (List[np.ndarray]) List of video frames in RGB.
     @param fps (int, optional) Desired FPS of the video. Defaults to 30.
     """
     with imageio.get_writer(dst_file, fps=fps, **kwargs) as writer:
@@ -24,12 +24,12 @@ def write_video(
             writer.append_data(image)
 
 
-def read_yaml(filename: str) -> tp.Dict[str, tp.Any]:
+def read_yaml(filename: str) -> Dict[str, Any]:
     """!
 
     @param filename (str) Reads a yaml file and returns the content as a dict.
 
-    @return tp.Dict[str, tp.Any] Dictionary with contents of yaml.
+    @return Dict[str, Any] Dictionary with contents of yaml.
     """
     with open(filename, "r") as stream:
         data_loaded = yaml.safe_load(stream)
@@ -62,7 +62,7 @@ def signed2gcs(signed_url: str) -> str:
     return gcs_url
 
 
-def get_bucket_and_path(gcs_full_path: str) -> tp.Tuple[str]:
+def get_bucket_and_path(gcs_full_path: str) -> Tuple[str]:
     """Splits a google cloud storage path into bucket_name and the rest
     of the path without the 'gs://' at the beginning
     Args:
@@ -70,7 +70,7 @@ def get_bucket_and_path(gcs_full_path: str) -> tp.Tuple[str]:
     Raises:
         ValueError: If input path does not start with gs://
     Returns:
-        tp.Tuple[str]: Bucket name and the rest of the path
+        Tuple[str]: Bucket name and the rest of the path
     """
     m = re.match(r"(gs://)([^/]+)/(.*)", gcs_full_path)
 
@@ -80,3 +80,17 @@ def get_bucket_and_path(gcs_full_path: str) -> tp.Tuple[str]:
     bucket = m.group(2)
     file_path = m.group(3)
     return bucket, file_path
+
+
+def decode_video(video_bytes: bytes) -> Tuple[List[np.ndarray], Dict[str, Any]]:
+    """! Decodes video from bytes to numpy array and metadata dict.
+        It uses ffmpeg as backend.
+    @param video_bytes (bytes) Video bytes.
+    @return Tuple[List[np.ndarray], Dict[str, Any]] List of frames and metadata.
+    """
+    frames = []
+    with imageio.get_reader(video_bytes, "ffmpeg") as reader:
+        meta = reader.get_meta_data()
+        for image in reader:
+            frames.append(image)
+    return frames, meta

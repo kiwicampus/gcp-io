@@ -3,9 +3,9 @@ import binascii
 import datetime
 import os
 import tempfile
-import typing as tp
 from io import BytesIO
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -13,17 +13,17 @@ import yaml
 from google.cloud import storage
 from google.oauth2 import service_account
 
-from .utils import write_video, md5sum, get_bucket_and_path
+from .utils import decode_video, get_bucket_and_path, md5sum, write_video
 
 
 class GCPInterface(object):
-    def __init__(self, client: tp.Optional[tp.Union[str, storage.Client]] = None):
+    def __init__(self, client: Optional[Union[str, storage.Client]] = None):
         """Create a GCP interface with given a GCP client or a path to a GCP key file.
         This class implements the following functions for I/O to GCP storage:
 
 
         Args:
-            client (tp.Optional[tp.Union[str, storage.Client]]): GCP storage
+            client (Optional[Union[str, storage.Client]]): GCP storage
                 client or path to a GCP service account file. If not provided it will
                 try to create one from the defaults using the environment variable
                 GOOGLE_APPLICATION_CREDENTIALS. Defaults to None.
@@ -41,10 +41,10 @@ class GCPInterface(object):
         else:
             raise ValueError("Invalid client type: {}".format(type(client)))
 
-    def write_yaml(self, dst_file: str, data: tp.Dict[str, tp.Any]) -> None:
+    def write_yaml(self, dst_file: str, data: Dict[str, Any]) -> None:
         """! Writes a yaml file.
         @param dst_file (str) dst_file to write
-        @param data (tp.Dict[str, tp.Any]) Data to write
+        @param data (Dict[str, Any]) Data to write
         """
         if "gs://" in dst_file:
             self.upload_data(
@@ -127,13 +127,13 @@ class GCPInterface(object):
     def upload_data(
         self,
         gcs_path: str,
-        data: tp.Union[str, bytes],
+        data: Union[str, bytes],
         content_type: str = "image/png",
     ):
         """Uploads data to google cloud storage
         Args:
             gcs_path (str): Full path to the bucket file
-            data (tp.Union[str,bytes]): Raw data to be uploaded
+            data (Union[str,bytes]): Raw data to be uploaded
             content_type (str, optional): HTTP content type style for the raw data.
                 Defaults to "image/png".
         Content Type for video options
@@ -172,7 +172,7 @@ class GCPInterface(object):
         blob = bucket.blob(file_path)
         return blob.download_as_bytes()
 
-    def download_data(
+    def download_file(
         self,
         src_file: str,
         dst_file: str,
@@ -197,16 +197,16 @@ class GCPInterface(object):
 
     def write_video(
         self,
-        dst_file: tp.Union[str, BytesIO],
-        frames: tp.List[np.ndarray],
+        dst_file: Union[str, BytesIO],
+        frames: List[np.ndarray],
         fps: int = 30,
         format: str = "mp4",
         **kwargs,
     ):
         """! Writes a video to a local file, remote file or BytesIO object.
         For remote file only GCP storage is supported.
-        @param dst_file (tp.Union[str, BytesIO]) Path string or BytesIO object.
-        @param frames (tp.List[np.ndarray]) Video list of frames in RGB.
+        @param dst_file (Union[str, BytesIO]) Path string or BytesIO object.
+        @param frames (List[np.ndarray]) Video list of frames in RGB.
         @param fps (int, optional) Desired FPS. Defaults to 30.
         @param format (str, optional) Format of the video in case dst_file is
             a BytesIO object. Defaults to "mp4".
@@ -241,13 +241,13 @@ class GCPInterface(object):
         self,
         dst_file: str,
         image: np.ndarray,
-        encode_args: tp.List[int] = None,
+        encode_args: List[int] = None,
     ):
         """! Writes the image to the destination file locally or cloud.
         For the moment only GCP storage is supported.
         @param dst_file (str) Full path to image.
         @param image (np.ndarray) Image as numpy array.
-        @param encode_args (tp.List[int], optional) List with parameters
+        @param encode_args (List[int], optional) List with parameters
             for encoding with cv2.imencode. For example for JPG it could
             be [cv2.IMWRITE_JPEG_QUALITY, 80]. Defaults to None.
         """
@@ -271,7 +271,7 @@ class GCPInterface(object):
             with open(dst_file, "wb") as f:
                 f.write(encoded_bytes)
 
-    def list_dir(self, src_dir: str, delimiter=None) -> tp.List[str]:
+    def list_dir(self, src_dir: str, delimiter=None) -> List[str]:
         """Get the list of files/folders of a GCP directory recursively
         when no delimeter.
 
@@ -280,7 +280,7 @@ class GCPInterface(object):
             delimiter ([str], optional): Delimeter. Defaults to None.
 
         Returns:
-            tp.List[str]: List of results
+            List[str]: List of results
         """
         bucket_name, file_path = get_bucket_and_path(src_dir)
         blobs = self.client.list_blobs(
@@ -289,6 +289,19 @@ class GCPInterface(object):
 
         for blob in blobs:
             yield os.path.join("gs://", bucket_name, blob.name)
+
+    def read_video(self, filepath: str) -> Tuple[List[np.ndarray], Dict[str, Any]]:
+        """! Reads a video from a local file or remote file and returns a list of
+            frames and metadata. It uses imageio and ffmpeg to decode the video.
+        @param filepath (str) Full path to the video file.
+        @returns (Tuple[List[np.ndarray], Dict[str, Any]]) List of frames and metadata.
+        """
+        if "gs://" in filepath:
+            video_bytes = self.get_bytes(filepath)
+        else:
+            video_bytes = open(filepath, "rb").read()
+
+        return decode_video(video_bytes)
 
 
 if __name__ == "__main__":
