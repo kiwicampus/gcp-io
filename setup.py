@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as readme:
     setup(
         name="gcp_io",
-        version="0.0.1",
+        version="0.0.2",
         author="Carlos Alvarez",
         author_email="carlos.alvarez@kiwibot.com",
         description="GCP io utilities",
@@ -20,7 +20,7 @@ with open("README.md", "r") as readme:
             "pyyaml",
             "google-cloud-storage",
             # "opencv-python-headless",
-            "imageio<=2.10",
-            "imageio-ffmpeg<=0.4",
+            "imageio<=2.10.0",
+            "imageio-ffmpeg<=0.4.5",
         ],
     )
