@@ -1,0 +1,44 @@
+# Checks that we can build and validate the Unittest
+name: GitHub CI
+on:
+  push:
+    # Sequence of patterns matched against refs/heads
+    branches:
+      # Push events on master branch
+      - main
+  pull_request:
+jobs:
+  test:
+    if: ${{ !contains(github.event.pull_request.title, 'WIP') }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # python-version: [3.7]
+        python-version: [3.7, 3.8, 3.9]
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
+
+      - name: Install Dependencies
+        run: |
+          pip install -e .
+          pip install pytest pytest-cov
+
+      - name: Run Tests
+        # run: pytest test
+        run: pytest --cov=gcp_io --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
