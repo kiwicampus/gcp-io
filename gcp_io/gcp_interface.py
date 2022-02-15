@@ -5,15 +5,15 @@ import os
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Iterator
 
-import cv2
+import imageio as iio
 import numpy as np
 import yaml
 from google.cloud import storage
 from google.oauth2 import service_account
 
-from .utils import decode_video, get_bucket_and_path, md5sum, write_video
+from .utils import decode_video, get_bucket_and_path, md5sum, write_video, read_yaml
 
 
 class GCPInterface(object):
@@ -40,6 +40,16 @@ class GCPInterface(object):
             self.client = client
         else:
             raise ValueError("Invalid client type: {}".format(type(client)))
+
+    def read_yaml(self, file_path: str) -> Dict[str, Any]:
+        """! Reads a yaml file.
+        @param file_path (str) Full path to file
+        @returns (Dict[str, Any]) Dictionary of file contents
+        """
+        if "gs://" in file_path:
+            return yaml.safe_load(self.get_bytes(file_path))
+        else:
+            read_yaml(file_path)
 
     def write_yaml(self, dst_file: str, data: Dict[str, Any]) -> None:
         """! Writes a yaml file.
@@ -100,6 +110,8 @@ class GCPInterface(object):
 
     def get_blob(self, file_path: str) -> storage.Blob:
         """Gets GCP storage.Blob object of given GCS file.
+        This will make an HTTP request. This is usefull if you
+        need the blob's metadata only.
 
         @param file_path (str) Full GCP file path, begins with gs://
 
@@ -110,6 +122,21 @@ class GCPInterface(object):
         bucket = self.client.bucket(bucket_name)
         # get bucket data as blob
         return bucket.get_blob(file_path)
+
+    def blob(self, file_path: str) -> storage.Blob:
+        """Gets GCP storage.Blob object of given GCS file.
+        This WON'T make an HTTP request.
+        This is usefull if you want to download or call other methods on the blob.
+
+        @param file_path (str) Full GCP file path, begins with gs://
+
+        @return storage.Blob Object of file
+        """
+        bucket_name, file_path = get_bucket_and_path(file_path)
+        # get bucket with name
+        bucket = self.client.bucket(bucket_name)
+        # get bucket data as blob without an HTTP request
+        return bucket.blob(file_path)
 
     def get_md5sum(self, file: str) -> str:
         """! Gets md5sum of file
@@ -154,9 +181,7 @@ class GCPInterface(object):
             image/vnd.djvu
             image/svg+xml
         """
-        bucket_name, file_path = get_bucket_and_path(gcs_path)
-        bucket = self.client.bucket(bucket_name)
-        bucket.blob(file_path).upload_from_string(data, content_type=content_type)
+        self.blob(gcs_path).upload_from_string(data, content_type=content_type)
 
     def get_bytes(self, gcs_path: str) -> bytes:
         """Gets bytes data from google cloud storage
@@ -167,9 +192,7 @@ class GCPInterface(object):
         Returns:
             bytes: Raw data from the file
         """
-        bucket_name, file_path = get_bucket_and_path(gcs_path)
-        bucket = self.client.bucket(bucket_name)
-        blob = bucket.blob(file_path)
+        blob = self.blob(gcs_path)
         return blob.download_as_bytes()
 
     def download_file(
@@ -191,9 +214,20 @@ class GCPInterface(object):
             local_file (str): Full path to the local file
             gcs_file (str): Full path to the bucket file
         """
-        bucket_name, file_path = get_bucket_and_path(gcs_file)
-        bucket = self.client.bucket(bucket_name)
-        bucket.blob(file_path).upload_from_filename(local_file)
+        self.blob(gcs_file).upload_from_filename(local_file)
+
+    def read_video(self, filepath: str) -> Tuple[List[np.ndarray], Dict[str, Any]]:
+        """! Reads a video from a local file or remote file and returns a list of
+            frames and metadata. It uses imageio and ffmpeg to decode the video.
+        @param filepath (str) Full path to the video file.
+        @returns (Tuple[List[np.ndarray], Dict[str, Any]]) List of frames and metadata.
+        """
+        if "gs://" in filepath:
+            video_bytes = self.get_bytes(filepath)
+        else:
+            video_bytes = open(filepath, "rb").read()
+
+        return decode_video(video_bytes)
 
     def write_video(
         self,
@@ -237,32 +271,34 @@ class GCPInterface(object):
         ".pgm": "application/octet-stream",
     }
 
+    def read_image(self, src_path: str) -> np.ndarray:
+        """! Reads an image from cloud or local storage and
+        returns the image as a numpy array.
+        @param src_path (str) Full path to the image file.
+        @returns (np.ndarray) Image as a numpy array.
+        """
+        if "gs://" in src_path:
+            image_bytes = self.get_bytes(src_path)
+        else:
+            with open(src_path, "rb") as f:
+                image_bytes = f.read()
+
+        return iio.imread(image_bytes)
+
     def write_image(
         self,
         dst_file: str,
         image: np.ndarray,
-        encode_args: List[int] = None,
+        encode_args: Dict[str, str] = {},
     ):
         """! Writes the image to the destination file locally or cloud.
         For the moment only GCP storage is supported.
         @param dst_file (str) Full path to image.
         @param image (np.ndarray) Image as numpy array.
-        @param encode_args (List[int], optional) List with parameters
-            for encoding with cv2.imencode. For example for JPG it could
-            be [cv2.IMWRITE_JPEG_QUALITY, 80]. Defaults to None.
+        @param encode_args (Dict[str, str], optional) Encoding arguments.
         """
         ext = Path(dst_file).suffix
-        # change to BGR because cv2.imencode expects BGR
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        if encode_args:
-            retval, encoded_bytes = cv2.imencode(ext, image, encode_args)
-        else:
-            retval, encoded_bytes = cv2.imencode(ext, image)
-
-        if not retval:
-            raise ValueError("image could not be encoded!")
-
-        encoded_bytes = encoded_bytes.tobytes()
+        encoded_bytes = iio.imwrite("<bytes>", image, format=ext, **encode_args)
 
         if "gs://" in dst_file:
             content_type = self.extension_to_content_type[ext]
@@ -271,7 +307,7 @@ class GCPInterface(object):
             with open(dst_file, "wb") as f:
                 f.write(encoded_bytes)
 
-    def list_dir(self, src_dir: str, delimiter=None) -> List[str]:
+    def list_dir(self, src_dir: str, delimiter=None) -> Iterator[str]:
         """Get the list of files/folders of a GCP directory recursively
         when no delimeter.
 
@@ -280,7 +316,7 @@ class GCPInterface(object):
             delimiter ([str], optional): Delimeter. Defaults to None.
 
         Returns:
-            List[str]: List of results
+            Iterator[str]: List of files/folders in the directory.
         """
         bucket_name, file_path = get_bucket_and_path(src_dir)
         blobs = self.client.list_blobs(
@@ -289,19 +325,6 @@ class GCPInterface(object):
 
         for blob in blobs:
             yield os.path.join("gs://", bucket_name, blob.name)
-
-    def read_video(self, filepath: str) -> Tuple[List[np.ndarray], Dict[str, Any]]:
-        """! Reads a video from a local file or remote file and returns a list of
-            frames and metadata. It uses imageio and ffmpeg to decode the video.
-        @param filepath (str) Full path to the video file.
-        @returns (Tuple[List[np.ndarray], Dict[str, Any]]) List of frames and metadata.
-        """
-        if "gs://" in filepath:
-            video_bytes = self.get_bytes(filepath)
-        else:
-            video_bytes = open(filepath, "rb").read()
-
-        return decode_video(video_bytes)
 
 
 if __name__ == "__main__":
