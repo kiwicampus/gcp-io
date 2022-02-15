@@ -9,6 +9,17 @@ This library provides an easy interface to do some common I/O tasks on Google Cl
 * Checking if a file exists in GCS.
 * Listing directories in GCS.
 
+## Installation
+```
+pip install git+https://github.com/kiwicampus/gcp-io.git@main
+```
+
+or with poetry
+
+```
+poetry add git+https://github.com/kiwicampus/gcp-io.git@main
+```
+
 ## Usage
 
 ```python
