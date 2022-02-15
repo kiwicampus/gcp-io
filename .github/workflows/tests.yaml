@@ -24,6 +24,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
 
       - name: Install Dependencies
         run: |
@@ -31,8 +36,6 @@ jobs:
           pip install pytest
 
       - name: Run Tests
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: pytest test
         # run: pytest --cov=elegy --cov-report=term-missing --cov-report=xml
 
