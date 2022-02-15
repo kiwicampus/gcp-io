@@ -33,6 +33,7 @@ interface = GCPInterface()
 interface = GCPInterface("/key/to/credentials.json")
 
 # this will be authenticated directly using a storage.Client object
+from google.cloud import storage
 interface = GCPInterface(storage.Client())
 
 # Use its methods comfortably
