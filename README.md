@@ -1,4 +1,7 @@
 # gcp-io
+
+[![codecov](https://codecov.io/gh/kiwicampus/gcp-io/branch/main/graph/badge.svg?token=BBO872LDKQ)](https://codecov.io/gh/kiwicampus/gcp-io)
+
 This library provides an easy interface to do some common I/O tasks on Google Cloud Storage (GCS). Those include:
 
 * Reading/writing an image file from and to GCS.
