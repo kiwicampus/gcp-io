@@ -49,7 +49,7 @@ class GCPInterface(object):
         if "gs://" in file_path:
             return yaml.safe_load(self.get_bytes(file_path))
         else:
-            read_yaml(file_path)
+            return read_yaml(file_path)
 
     def write_yaml(self, dst_file: str, data: Dict[str, Any]) -> None:
         """! Writes a yaml file.
