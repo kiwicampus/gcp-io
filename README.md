@@ -43,3 +43,15 @@ interface = GCPInterface(storage.Client())
 image = interface.read_image("gs://bucket/path/to/image.jpg")
 interface.write_image("gs://bucket/path/to/image.jpg", image)
 ```
+
+
+## Contributing
+Feel free to send PRs if you want to implement something or to propose changes. For that remember to run the tests and if implementing something new to make the proper tests and coverage.
+
+### Running the tests
+Because of the nature of this library you'll need to be authenticated to google cloud. Our test bucket is public so anyone authenticated could run the tests. For this purpose you need to set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to your `.json` authentification file. Also you need to install `pytest` and `pytest-cov`. After that just run:
+
+```
+pytest test
+```
+
