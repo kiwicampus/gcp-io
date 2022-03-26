@@ -227,7 +227,7 @@ class GCPInterface(object):
         """! Downloads the file from cloud storage to local file
         @param src_file (str) Full path to the file in cloud storage.
         @param dst_file (str) Full path to the file to be downloaded.
-        @param checks_cahnges (bool) Option to check if the file has changed.
+        @param checks_changes (bool) Option to check if the file has changed.
         """
         if checks_cahnges:
             if self.check_sum(src_file, dst_file):
@@ -245,7 +245,7 @@ class GCPInterface(object):
         """Uploads a local file to google cloud storage
         @local_file (str): Full path to the local file
         @gcs_file (str): Full path to the bucket file
-        @param checks_cahnges (bool) Option to check if the file has changed.
+        @param checks_changes (bool) Option to check if the file has changed.
         """
         if checks_cahnges:
             if self.check_sum(gcs_file, local_file):
