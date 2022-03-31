@@ -1,9 +1,8 @@
+from ast import Return
 import base64
-import hashlib
 import binascii
 import datetime
 import os
-from pickle import TRUE
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -161,17 +160,10 @@ class GCPInterface(object):
         """
         # If file exists, check if it has different hash
         if os.path.exists(local_file):
-            file_content = self.get_blob(gcs_file).download_as_string()
-            remote_filehash = hashlib.sha256(file_content).hexdigest()
-            with open(local_file, "rb") as f:
-                local_filehash = hashlib.sha256(f.read()).hexdigest()
-
+            remote_filehash = self.get_md5sum(gcs_file)
+            local_filehash = self.get_md5sum(local_file)
             if local_filehash == remote_filehash:
-                #print(f"File hasn't changed, not overwriting")
                 return True
-        else:
-            pass
-            #print(f"File not found")
         return False
         
     def upload_data(
@@ -222,36 +214,35 @@ class GCPInterface(object):
         self,
         src_file: str,
         dst_file: str,
-        checks_cahnges: bool = True,
+        checks_changes: bool = True,
     ):
         """! Downloads the file from cloud storage to local file
         @param src_file (str) Full path to the file in cloud storage.
         @param dst_file (str) Full path to the file to be downloaded.
         @param checks_changes (bool) Option to check if the file has changed.
         """
-        if checks_cahnges:
-            if self.check_sum(src_file, dst_file):
-                return
+        if checks_changes and self.check_sum(src_file, dst_file):
+            return False
         #print("Downloading file")
         content_bytes = self.get_bytes(src_file)
         with open(dst_file, "wb") as f:
             f.write(content_bytes)
+        return True
 
     def upload_file(
         self, 
         local_file: str, 
         gcs_file: str, 
-        checks_cahnges: bool = True):
+        checks_changes: bool = True):
         """Uploads a local file to google cloud storage
         @local_file (str): Full path to the local file
         @gcs_file (str): Full path to the bucket file
         @param checks_changes (bool) Option to check if the file has changed.
         """
-        if checks_cahnges:
-            if self.check_sum(gcs_file, local_file):
-                return
-        #print("Uploading file")
+        if checks_changes and self.check_sum(gcs_file, local_file):
+            return False
         self.blob(gcs_file).upload_from_filename(local_file)
+        return True
 
     def read_video(self, filepath: str) -> Tuple[List[np.ndarray], Dict[str, Any]]:
         """! Reads a video from a local file or remote file and returns a list of
