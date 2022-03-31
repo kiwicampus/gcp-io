@@ -1,4 +1,3 @@
-from ast import Return
 import base64
 import binascii
 import datetime
@@ -152,7 +151,7 @@ class GCPInterface(object):
             md5_hash = md5sum(file)
         return md5_hash
 
-    def check_sum(self, gcs_file: str, local_file: str) -> bool:
+    def check_md5sum(self, gcs_file: str, local_file: str) -> bool:
         
         """! Check if there are differences between a local file and one in GCP
         @param gcs_file (str) Full path to the file in cloud storage.
@@ -214,35 +213,35 @@ class GCPInterface(object):
         self,
         src_file: str,
         dst_file: str,
-        checks_changes: bool = True,
+        md5sum_check: bool = True,
     ):
         """! Downloads the file from cloud storage to local file
         @param src_file (str) Full path to the file in cloud storage.
         @param dst_file (str) Full path to the file to be downloaded.
-        @param checks_changes (bool) Option to check if the file has changed.
+        @param md5sum_check (bool) Option to check if the file has changed.
         """
-        if checks_changes and self.check_sum(src_file, dst_file):
-            return False
+        if md5sum_check and self.check_md5sum(src_file, dst_file):
+            return None
         #print("Downloading file")
         content_bytes = self.get_bytes(src_file)
         with open(dst_file, "wb") as f:
             f.write(content_bytes)
-        return True
+        return None
 
     def upload_file(
         self, 
         local_file: str, 
         gcs_file: str, 
-        checks_changes: bool = True):
+        md5sum_check: bool = True):
         """Uploads a local file to google cloud storage
         @local_file (str): Full path to the local file
         @gcs_file (str): Full path to the bucket file
-        @param checks_changes (bool) Option to check if the file has changed.
+        @param md5sum_check (bool) Option to check if the file has changed.
         """
-        if checks_changes and self.check_sum(gcs_file, local_file):
-            return False
+        if md5sum_check and self.check_md5sum(gcs_file, local_file):
+            return None
         self.blob(gcs_file).upload_from_filename(local_file)
-        return True
+        return None
 
     def read_video(self, filepath: str) -> Tuple[List[np.ndarray], Dict[str, Any]]:
         """! Reads a video from a local file or remote file and returns a list of

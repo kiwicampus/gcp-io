@@ -4,7 +4,7 @@ import os
 import json
 from typing import Any, Dict
 
-from gcp_io.gcp_interface import GCPInterface
+from gcp_io import GCPInterface
 
 interface = GCPInterface()
 
@@ -25,16 +25,17 @@ class TestFilesMethods(unittest.TestCase):
     
     def test_dowload_files(self):
         gcs_url = "gs://gcp-io-tests/files/test_donwload.json"
-        downloaded_file = interface.download_file(gcs_url, "test_donwload.json")
+        interface.download_file(gcs_url, "test_donwload.json")
+        downloaded_file = os.path.exists("test_donwload.json")
         os.remove("test_donwload.json") 
-        assert downloaded_file is True
+        assert downloaded_file
 
     def test_repeated_dowload_files(self):
         gcs_url = "gs://gcp-io-tests/files/test_donwload.json"
         interface.download_file(gcs_url, "test_donwload.json")
-        downloaded_file = interface.download_file(gcs_url, "test_donwload.json")
+        downloaded_file = interface.check_md5sum(gcs_url, "test_donwload.json")
         os.remove("test_donwload.json") 
-        assert downloaded_file is False
+        assert downloaded_file
 
     def test_upload_files(self):
         gcs_url = "gs://gcp-io-tests/files/test_donwload.json"
@@ -44,15 +45,15 @@ class TestFilesMethods(unittest.TestCase):
             data["C"] = 3
             with open("test_donwload_updated.json", "w") as json_updated:
                 json.dump(data,json_updated)
-        uploaded_file = interface.upload_file("test_donwload_updated.json", gcs_url)
+        uploaded_file = interface.check_md5sum(gcs_url, "test_donwload_updated.json")
         interface.upload_file("test_donwload.json", gcs_url)
         os.remove("test_donwload.json")
         os.remove("test_donwload_updated.json") 
-        assert uploaded_file is True
+        assert not uploaded_file
 
     def test_upload_repeated_files(self):
         gcs_url = "gs://gcp-io-tests/files/test_donwload.json"
         interface.download_file(gcs_url, "test_donwload.json")
-        uploaded_file = interface.upload_file("test_donwload.json", gcs_url)
+        uploaded_file = interface.check_md5sum(gcs_url, "test_donwload.json")
         os.remove("test_donwload.json") 
-        assert uploaded_file is False
+        assert uploaded_file
