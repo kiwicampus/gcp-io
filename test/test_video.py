@@ -9,7 +9,6 @@ interface = GCPInterface()
 
 
 class TestVideoMethods(unittest.TestCase):
-
     def setUp(self):
         self.local_video = "test.mp4"
 
@@ -35,7 +34,7 @@ class TestVideoMethods(unittest.TestCase):
     def test_read_video_rgb(self):
         frames = self.get_frames((32, 32, 3), 10)
         self.read_write_test("gs://gcp-io-tests/video/video_rgb.mp4", frames)
-    
+
     def test_read_video_rgb_local(self):
         frames = self.get_frames((32, 32, 3), 10)
         self.read_write_test(self.local_video, frames)
