@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as readme:
     setup(
         name="gcp_io",
-        version="0.0.3",
+        version="0.0.4",
         author="Carlos Alvarez",
         author_email="carlos.alvarez@kiwibot.com",
         description="GCP io utilities",

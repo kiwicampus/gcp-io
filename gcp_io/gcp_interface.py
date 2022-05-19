@@ -1,11 +1,12 @@
 import base64
 import binascii
 import datetime
+import logging
 import os
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, Iterator
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import imageio as iio
 import numpy as np
@@ -13,7 +14,7 @@ import yaml
 from google.cloud import storage
 from google.oauth2 import service_account
 
-from .utils import decode_video, get_bucket_and_path, md5sum, write_video, read_yaml
+from .utils import decode_video, get_bucket_and_path, md5sum, read_yaml, write_video
 
 
 class GCPInterface(object):
@@ -87,7 +88,7 @@ class GCPInterface(object):
                 method="GET",
             )
         except Exception as e:
-            print(f"Error getting signed URL: {e}")
+            logging.exception(f"Error getting signed URL: {e}")
 
         return url
 
@@ -98,19 +99,29 @@ class GCPInterface(object):
         """
         if "gs://" in file_path:
             try:
-                bucket_name, file_path = get_bucket_and_path(file_path)
-                bucket = self.client.bucket(bucket_name)
-                return bucket.blob(file_path).exists()
+                return self.blob(file_path).exists()
             except Exception as e:
-                print(f"Error checking if file exists: {file_path}, {e}")
+                logging.exception(f"Error checking if file exists: {file_path}, {e}")
                 # If some error, we assume it doesn't exists, we don't know
                 return False
         else:
             return Path(file_path).exists()
 
+    def remove_file(self, file_path: str) -> None:
+        """Removes a file from GCS or local file system.
+
+        Args:
+            file_path (str): Full path to file
+        """
+        if "gs://" in file_path:
+            blob = self.blob(file_path)
+            blob.delete()
+        else:
+            os.remove(file_path)
+
     def get_blob(self, file_path: str) -> storage.Blob:
         """Gets GCP storage.Blob object of given GCS file.
-        This will make an HTTP request. This is usefull if you
+        This will make an HTTP request. This is useful if you
         need the blob's metadata only.
 
         @param file_path (str) Full GCP file path, begins with gs://
@@ -126,7 +137,7 @@ class GCPInterface(object):
     def blob(self, file_path: str) -> storage.Blob:
         """Gets GCP storage.Blob object of given GCS file.
         This WON'T make an HTTP request.
-        This is usefull if you want to download or call other methods on the blob.
+        This is useful if you want to download or call other methods on the blob.
 
         @param file_path (str) Full GCP file path, begins with gs://
 
@@ -152,19 +163,19 @@ class GCPInterface(object):
         return md5_hash
 
     def check_md5sum(self, gcs_file: str, local_file: str) -> bool:
-        
+
         """! Check if there are differences between a local file and one in GCP
         @param gcs_file (str) Full path to the file in cloud storage.
         @param local_file (str) Full path to the local file.
         """
         # If file exists, check if it has different hash
-        if os.path.exists(local_file):
+        if os.path.exists(local_file) and self.file_exists(gcs_file):
             remote_filehash = self.get_md5sum(gcs_file)
             local_filehash = self.get_md5sum(local_file)
             if local_filehash == remote_filehash:
                 return True
         return False
-        
+
     def upload_data(
         self,
         gcs_path: str,
@@ -222,17 +233,13 @@ class GCPInterface(object):
         """
         if md5sum_check and self.check_md5sum(src_file, dst_file):
             return None
-        #print("Downloading file")
+        # print("Downloading file")
         content_bytes = self.get_bytes(src_file)
         with open(dst_file, "wb") as f:
             f.write(content_bytes)
         return None
 
-    def upload_file(
-        self, 
-        local_file: str, 
-        gcs_file: str, 
-        md5sum_check: bool = True):
+    def upload_file(self, local_file: str, gcs_file: str, md5sum_check: bool = True):
         """Uploads a local file to google cloud storage
         @local_file (str): Full path to the local file
         @gcs_file (str): Full path to the bucket file

@@ -8,7 +8,6 @@ interface = GCPInterface()
 
 
 class TestImageMethods(unittest.TestCase):
-
     def setUp(self):
         self.local_image = "test.png"
 
