@@ -67,12 +67,17 @@ class GCPInterface(object):
             with open(dst_file, "w") as outfile:
                 yaml.dump(data, outfile, default_flow_style=False)
 
-    def gcs2signed(self, gcs_path: str, expiration_mins: int = 15) -> str:
+    def gcs2signed(self, gcs_path: str, expiration_mins: int = 15, **kwargs) -> str:
         """Generates a v4 signed URL for downloading a blob.
 
         Note that this method requires a service account key file. You can not use
         this if you are using Application Default Credentials from Google Compute
         Engine or from the Google Cloud SDK.
+
+        There is a workaround for this, which is using impersonated credentials.
+        See: https://blog.salrashid.dev/articles/2021/cloud_sdk_missing_manual/gcs_signedurl/
+        and https://cloud.google.com/iam/docs/impersonating-service-accounts.
+        For that use the kwargs to pass custom credentials to the generate_signed_url function.
         """
         url = None
         try:
@@ -82,10 +87,11 @@ class GCPInterface(object):
 
             url = blob.generate_signed_url(
                 version="v4",
-                # This URL is valid for 15 minutes
+                # This URL is valid for expiration_mins minutes
                 expiration=datetime.timedelta(minutes=expiration_mins),
                 # Allow GET requests using this URL.
                 method="GET",
+                **kwargs,
             )
         except Exception as e:
             logging.exception(f"Error getting signed URL: {e}")
