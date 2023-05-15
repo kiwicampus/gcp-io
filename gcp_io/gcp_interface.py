@@ -169,7 +169,6 @@ class GCPInterface(object):
         return md5_hash
 
     def check_md5sum(self, gcs_file: str, local_file: str) -> bool:
-
         """! Check if there are differences between a local file and one in GCP
         @param gcs_file (str) Full path to the file in cloud storage.
         @param local_file (str) Full path to the local file.
@@ -187,7 +186,7 @@ class GCPInterface(object):
         gcs_path: str,
         data: Union[str, bytes],
         content_type: str = "image/png",
-        **kwargs
+        **kwargs,
     ):
         """
         Uploads data to google cloud storage.
@@ -222,7 +221,9 @@ class GCPInterface(object):
         Example of using **kwargs:
             upload_data(gcs_path, data, content_type="video/mp4", custom_arg="value")
         """
-        self.blob(gcs_path).upload_from_string(data, content_type=content_type, **kwargs)
+        self.blob(gcs_path).upload_from_string(
+            data, content_type=content_type, **kwargs
+        )
 
     def get_bytes(self, gcs_path: str) -> bytes:
         """Gets bytes data from google cloud storage
@@ -255,7 +256,9 @@ class GCPInterface(object):
             f.write(content_bytes)
         return None
 
-    def upload_file(self, local_file: str, gcs_file: str, md5sum_check: bool = True, **kwargs):
+    def upload_file(
+        self, local_file: str, gcs_file: str, md5sum_check: bool = True, **kwargs
+    ):
         """
         Uploads a local file to google cloud storage.
 
