@@ -187,14 +187,20 @@ class GCPInterface(object):
         gcs_path: str,
         data: Union[str, bytes],
         content_type: str = "image/png",
+        **kwargs
     ):
-        """Uploads data to google cloud storage
+        """
+        Uploads data to google cloud storage.
+
         Args:
-            gcs_path (str): Full path to the bucket file
-            data (Union[str,bytes]): Raw data to be uploaded
+            gcs_path (str): Full path to the bucket file.
+            data (Union[str,bytes]): Raw data to be uploaded.
             content_type (str, optional): HTTP content type style for the raw data.
                 Defaults to "image/png".
-        Content Type for video options
+            **kwargs: Additional keyword arguments to be forwarded to the
+                'upload_from_string' method of the blob object.
+
+        Content Type for video options:
             video/mpeg
             video/mp4
             video/quicktime
@@ -202,7 +208,8 @@ class GCPInterface(object):
             video/x-msvideo
             video/x-flv
             video/webm
-        Content type for image options
+
+        Content type for image options:
             image/gif
             image/jpeg
             image/png
@@ -211,8 +218,11 @@ class GCPInterface(object):
             image/x-icon
             image/vnd.djvu
             image/svg+xml
+
+        Example of using **kwargs:
+            upload_data(gcs_path, data, content_type="video/mp4", custom_arg="value")
         """
-        self.blob(gcs_path).upload_from_string(data, content_type=content_type)
+        self.blob(gcs_path).upload_from_string(data, content_type=content_type, **kwargs)
 
     def get_bytes(self, gcs_path: str) -> bytes:
         """Gets bytes data from google cloud storage
@@ -245,15 +255,24 @@ class GCPInterface(object):
             f.write(content_bytes)
         return None
 
-    def upload_file(self, local_file: str, gcs_file: str, md5sum_check: bool = True):
-        """Uploads a local file to google cloud storage
-        @local_file (str): Full path to the local file
-        @gcs_file (str): Full path to the bucket file
-        @param md5sum_check (bool) Option to check if the file has changed.
+    def upload_file(self, local_file: str, gcs_file: str, md5sum_check: bool = True, **kwargs):
+        """
+        Uploads a local file to google cloud storage.
+
+        @param local_file (str): Full path to the local file.
+        @param gcs_file (str): Full path to the bucket file.
+        @param md5sum_check (bool): Option to check if the file has changed
+            before uploading. Defaults to True.
+        @param **kwargs: Additional keyword arguments to be forwarded to the
+            'upload_from_filename' method of the blob object.
+
+        For example, if the 'upload_from_filename' method accepts a 'content_type'
+        argument, you can pass it like this:
+        upload_file(local_file, gcs_file, content_type="text/csv")
         """
         if md5sum_check and self.check_md5sum(gcs_file, local_file):
             return None
-        self.blob(gcs_file).upload_from_filename(local_file)
+        self.blob(gcs_file).upload_from_filename(local_file, **kwargs)
         return None
 
     def read_video(self, filepath: str) -> Tuple[List[np.ndarray], Dict[str, Any]]:
