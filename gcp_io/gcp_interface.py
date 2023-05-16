@@ -42,26 +42,45 @@ class GCPInterface(object):
         else:
             raise ValueError("Invalid client type: {}".format(type(client)))
 
-    def read_yaml(self, file_path: str) -> Dict[str, Any]:
-        """! Reads a yaml file.
-        @param file_path (str) Full path to file
-        @returns (Dict[str, Any]) Dictionary of file contents
+    def read_yaml(self, file_path: str, **kwargs) -> Dict[str, Any]:
+        """
+        Reads a yaml file.
+
+        Args:
+            file_path (str): Full path to the file.
+            **kwargs: Additional keyword arguments to be forwarded to the
+                'get_bytes' method if the file is on Google Cloud Storage.
+
+        Returns:
+            Dict[str, Any]: Dictionary of file contents.
+
+        Example of using **kwargs:
+            read_yaml(file_path, start=10, end=50)
         """
         if "gs://" in file_path:
-            return yaml.safe_load(self.get_bytes(file_path))
+            return yaml.safe_load(self.get_bytes(file_path, **kwargs))
         else:
             return read_yaml(file_path)
 
-    def write_yaml(self, dst_file: str, data: Dict[str, Any]) -> None:
-        """! Writes a yaml file.
-        @param dst_file (str) dst_file to write
-        @param data (Dict[str, Any]) Data to write
+    def write_yaml(self, dst_file: str, data: Dict[str, Any], **kwargs) -> None:
+        """
+        Writes a yaml file.
+
+        Args:
+            dst_file (str): Destination file to write.
+            data (Dict[str, Any]): Data to write.
+            **kwargs: Additional keyword arguments to be forwarded to the
+                'upload_data' method if the file is on Google Cloud Storage.
+
+        Example of using **kwargs:
+            write_yaml(dst_file, data, custom_arg="value")
         """
         if "gs://" in dst_file:
             self.upload_data(
                 dst_file,
                 yaml.dump(data, default_flow_style=False),
                 "application/x-yaml",
+                **kwargs,
             )
         else:
             with open(dst_file, "w") as outfile:
@@ -225,33 +244,47 @@ class GCPInterface(object):
             data, content_type=content_type, **kwargs
         )
 
-    def get_bytes(self, gcs_path: str) -> bytes:
-        """Gets bytes data from google cloud storage
+    def get_bytes(self, gcs_path: str, **kwargs) -> bytes:
+        """
+        Gets bytes data from google cloud storage.
+
         Args:
-            gcs_path (str): Full path to the bucket file
+            gcs_path (str): Full path to the bucket file.
+            **kwargs: Additional keyword arguments to be forwarded to the
+                'download_as_bytes' method of the blob object.
+
         Raises:
-            ValueError: If input path does not start with gs://
+            ValueError: If input path does not start with gs://.
+
         Returns:
-            bytes: Raw data from the file
+            bytes: Raw data from the file.
+
+        Example of using **kwargs:
+            get_bytes(gcs_path, start=10, end=50)
         """
         blob = self.blob(gcs_path)
-        return blob.download_as_bytes()
+        return blob.download_as_bytes(**kwargs)
 
     def download_file(
-        self,
-        src_file: str,
-        dst_file: str,
-        md5sum_check: bool = True,
+        self, src_file: str, dst_file: str, md5sum_check: bool = True, **kwargs
     ):
-        """! Downloads the file from cloud storage to local file
-        @param src_file (str) Full path to the file in cloud storage.
-        @param dst_file (str) Full path to the file to be downloaded.
-        @param md5sum_check (bool) Option to check if the file has changed.
+        """
+        Downloads the file from cloud storage to local file.
+
+        Args:
+            src_file (str): Full path to the file in cloud storage.
+            dst_file (str): Full path to the file to be downloaded.
+            md5sum_check (bool): Option to check if the file has changed.
+                Defaults to True.
+            **kwargs: Additional keyword arguments to be forwarded to the 'get_bytes'
+                method of the blob object.
+
+        Example of using **kwargs:
+            download_file(src_file, dst_file, start=10, end=50)
         """
         if md5sum_check and self.check_md5sum(src_file, dst_file):
             return None
-        # print("Downloading file")
-        content_bytes = self.get_bytes(src_file)
+        content_bytes = self.get_bytes(src_file, **kwargs)
         with open(dst_file, "wb") as f:
             f.write(content_bytes)
         return None
@@ -278,14 +311,26 @@ class GCPInterface(object):
         self.blob(gcs_file).upload_from_filename(local_file, **kwargs)
         return None
 
-    def read_video(self, filepath: str) -> Tuple[List[np.ndarray], Dict[str, Any]]:
-        """! Reads a video from a local file or remote file and returns a list of
-            frames and metadata. It uses imageio and ffmpeg to decode the video.
-        @param filepath (str) Full path to the video file.
-        @returns (Tuple[List[np.ndarray], Dict[str, Any]]) List of frames and metadata.
+    def read_video(
+        self, filepath: str, **kwargs
+    ) -> Tuple[List[np.ndarray], Dict[str, Any]]:
+        """
+        Reads a video from a local file or remote file and returns a list of frames
+        and metadata. It uses imageio and ffmpeg to decode the video.
+
+        Args:
+            filepath (str): Full path to the video file.
+            **kwargs: Additional keyword arguments to be forwarded to the 'get_bytes'
+                method if the file is on Google Cloud Storage.
+
+        Returns:
+            Tuple[List[np.ndarray], Dict[str, Any]]: List of frames and metadata.
+
+        Example of using **kwargs:
+            read_video(filepath, start=10, end=50)
         """
         if "gs://" in filepath:
-            video_bytes = self.get_bytes(filepath)
+            video_bytes = self.get_bytes(filepath, **kwargs)
         else:
             video_bytes = open(filepath, "rb").read()
 
@@ -310,7 +355,7 @@ class GCPInterface(object):
         if isinstance(dst_file, BytesIO):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 dst_path = os.path.join(tmp_dir, f"video.{format}")
-                write_video(dst_path, frames, fps, **kwargs)
+                write_video(dst_path, frames, fps)
                 with open(dst_path, "rb") as f:
                     dst_file.write(f.read())
 
@@ -318,11 +363,13 @@ class GCPInterface(object):
         elif "gs://" in dst_file:
             video_bytes = BytesIO()
             format = Path(dst_file).suffix[1:]
-            self.write_video(video_bytes, frames, fps, format, **kwargs)
-            self.upload_data(dst_file, video_bytes.getvalue(), f"video/{format}")
+            self.write_video(video_bytes, frames, fps, format)
+            self.upload_data(
+                dst_file, video_bytes.getvalue(), f"video/{format}", **kwargs
+            )
             # self.upload_data(dst_file, video_bytes.getvalue(), "video/mpeg")
         else:
-            write_video(dst_file, frames, fps, **kwargs)
+            write_video(dst_file, frames, fps)
 
     extension_to_content_type = {
         ".png": "image/png",
@@ -333,14 +380,23 @@ class GCPInterface(object):
         ".pgm": "application/octet-stream",
     }
 
-    def read_image(self, src_path: str) -> np.ndarray:
-        """! Reads an image from cloud or local storage and
-        returns the image as a numpy array.
-        @param src_path (str) Full path to the image file.
-        @returns (np.ndarray) Image as a numpy array.
+    def read_image(self, src_path: str, **kwargs) -> np.ndarray:
+        """
+        Reads an image from cloud or local storage and returns the image as a numpy array.
+
+        Args:
+            src_path (str): Full path to the image file.
+            **kwargs: Additional keyword arguments to be forwarded to the
+                'get_bytes' method if the file is on Google Cloud Storage.
+
+        Returns:
+            np.ndarray: Image as a numpy array.
+
+        Example of using **kwargs:
+            read_image(src_path, start=10, end=50)
         """
         if "gs://" in src_path:
-            image_bytes = self.get_bytes(src_path)
+            image_bytes = self.get_bytes(src_path, **kwargs)
         else:
             with open(src_path, "rb") as f:
                 image_bytes = f.read()
@@ -352,19 +408,28 @@ class GCPInterface(object):
         dst_file: str,
         image: np.ndarray,
         encode_args: Dict[str, str] = {},
+        **kwargs,
     ):
-        """! Writes the image to the destination file locally or cloud.
+        """
+        Writes the image to the destination file locally or cloud.
         For the moment only GCP storage is supported.
-        @param dst_file (str) Full path to image.
-        @param image (np.ndarray) Image as numpy array.
-        @param encode_args (Dict[str, str], optional) Encoding arguments.
+
+        Args:
+            dst_file (str): Full path to the image.
+            image (np.ndarray): Image as numpy array.
+            encode_args (Dict[str, str], optional): Encoding arguments.
+            **kwargs: Additional keyword arguments to be forwarded to the
+                'upload_data' method if the file is on Google Cloud Storage.
+
+        Example of using **kwargs:
+            write_image(dst_file, image, encode_args={"quality": 90}, custom_arg="value")
         """
         ext = Path(dst_file).suffix
         encoded_bytes = iio.imwrite("<bytes>", image, format=ext, **encode_args)
 
         if "gs://" in dst_file:
             content_type = self.extension_to_content_type[ext]
-            self.upload_data(dst_file, encoded_bytes, content_type)
+            self.upload_data(dst_file, encoded_bytes, content_type, **kwargs)
         else:
             with open(dst_file, "wb") as f:
                 f.write(encoded_bytes)
