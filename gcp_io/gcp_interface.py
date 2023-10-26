@@ -6,7 +6,7 @@ import os
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterator, List, Optional, Tuple, Union
 
 import imageio as iio
 import numpy as np
@@ -14,7 +14,14 @@ import yaml
 from google.cloud import storage
 from google.oauth2 import service_account
 
-from .utils import decode_video, get_bucket_and_path, md5sum, read_yaml, write_video
+from .utils import (
+    decode_video,
+    decode_video_gen,
+    get_bucket_and_path,
+    md5sum,
+    read_yaml,
+    write_video,
+)
 
 
 class GCPInterface(object):
@@ -335,6 +342,21 @@ class GCPInterface(object):
             video_bytes = open(filepath, "rb").read()
 
         return decode_video(video_bytes)
+
+    def read_video_gen(
+        self, filepath: str
+    ) -> Generator[Tuple[np.ndarray, Dict[str, Any]], None, None]:
+        """! Reads a video from a local file or remote file and returns a list of
+            frames and metadata. It uses imageio and ffmpeg to decode the video.
+        @param filepath (str) Full path to the video file.
+        @returns (Tuple[List[np.ndarray], Dict[str, Any]]) List of frames and metadata.
+        """
+        if "gs://" in filepath:
+            video_bytes = self.get_bytes(filepath)
+        else:
+            video_bytes = open(filepath, "rb").read()
+
+        return decode_video_gen(video_bytes)
 
     def write_video(
         self,

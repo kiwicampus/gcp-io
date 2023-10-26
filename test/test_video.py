@@ -39,6 +39,17 @@ class TestVideoMethods(unittest.TestCase):
         frames = self.get_frames((32, 32, 3), 10)
         self.read_write_test(self.local_video, frames)
 
+    def test_gen_video(self):
+        video_generator = interface.read_video_gen(
+            "gs://gcp-io-tests/video/video_rgb.mp4"
+        )
+        # Assert video_generator is a generator
+        assert hasattr(video_generator, "__iter__")
+        for data in video_generator:
+            frame, metadata = data
+            assert isinstance(frame, np.ndarray)
+            assert isinstance(metadata, dict)
+
     # HINT: imageio seems to not support gray and rgba videos, always produces rgb videos
     # def test_read_video_gray(self):
     #     frames = self.get_frames((32, 32), 10)
