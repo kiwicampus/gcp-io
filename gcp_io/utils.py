@@ -1,7 +1,7 @@
 import hashlib
 import re
 from functools import partial
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Generator, List, Tuple
 
 import imageio
 import numpy as np
@@ -94,3 +94,17 @@ def decode_video(video_bytes: bytes) -> Tuple[List[np.ndarray], Dict[str, Any]]:
         for image in reader:
             frames.append(image)
     return frames, meta
+
+
+def decode_video_gen(
+    video_bytes: bytes,
+) -> Generator[Tuple[np.ndarray, Dict[str, Any]], None, None]:
+    """! Decodes video from bytes to numpy array and metadata dict.
+        It uses ffmpeg as backend.
+    @param video_bytes (bytes) Video bytes.
+    @return Tuple[List[np.ndarray], Dict[str, Any]] List of frames and metadata.
+    """
+    with imageio.get_reader(video_bytes, "ffmpeg") as reader:
+        meta = reader.get_meta_data()
+        for image in reader:
+            yield image, meta
