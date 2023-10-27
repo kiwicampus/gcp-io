@@ -212,6 +212,7 @@ class GCPInterface(object):
         gcs_path: str,
         data: Union[str, bytes],
         content_type: str = "image/png",
+        num_retries: int = 3,
         **kwargs,
     ):
         """
@@ -222,6 +223,7 @@ class GCPInterface(object):
             data (Union[str,bytes]): Raw data to be uploaded.
             content_type (str, optional): HTTP content type style for the raw data.
                 Defaults to "image/png".
+            num_retries (int, optional): Number of retries in case of failure.
             **kwargs: Additional keyword arguments to be forwarded to the
                 'upload_from_string' method of the blob object.
 
@@ -248,7 +250,7 @@ class GCPInterface(object):
             upload_data(gcs_path, data, content_type="video/mp4", custom_arg="value")
         """
         self.blob(gcs_path).upload_from_string(
-            data, content_type=content_type, **kwargs
+            data, content_type=content_type, num_retries=num_retries, **kwargs
         )
 
     def get_bytes(self, gcs_path: str, **kwargs) -> bytes:
@@ -377,7 +379,7 @@ class GCPInterface(object):
         if isinstance(dst_file, BytesIO):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 dst_path = os.path.join(tmp_dir, f"video.{format}")
-                write_video(dst_path, frames, fps)
+                write_video(dst_path, frames, fps, **kwargs)
                 with open(dst_path, "rb") as f:
                     dst_file.write(f.read())
 
@@ -385,13 +387,11 @@ class GCPInterface(object):
         elif "gs://" in dst_file:
             video_bytes = BytesIO()
             format = Path(dst_file).suffix[1:]
-            self.write_video(video_bytes, frames, fps, format)
-            self.upload_data(
-                dst_file, video_bytes.getvalue(), f"video/{format}", **kwargs
-            )
+            self.write_video(video_bytes, frames, fps, format, **kwargs)
+            self.upload_data(dst_file, video_bytes.getvalue(), f"video/{format}")
             # self.upload_data(dst_file, video_bytes.getvalue(), "video/mpeg")
         else:
-            write_video(dst_file, frames, fps)
+            write_video(dst_file, frames, fps, **kwargs)
 
     extension_to_content_type = {
         ".png": "image/png",
