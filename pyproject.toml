@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "gcp-io"
+name = "gcp-io-util"
 version = "0.1.0"
 description = "GCS io utility functions"
 authors = ["Carlos Alvarez <candres.alv@gmail.com>"]
