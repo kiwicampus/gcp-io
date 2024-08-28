@@ -32,7 +32,7 @@ jobs:
 
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v0'
+        uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
 
@@ -47,7 +47,7 @@ jobs:
         run: poetry install
 
       - name: Run Tests
-        run: pytest --cov=gcp_io --cov-report=term-missing --cov-report=xml
+        run: poetry run pytest --cov=gcp_io --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v2
