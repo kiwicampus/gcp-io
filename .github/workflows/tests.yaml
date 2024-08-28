@@ -13,6 +13,8 @@ jobs:
       matrix:
         # python-version: [3.8]
         python-version: [3.8, 3.9, "3.10"]
+      max-parallel: 1  # Ensures that only one job runs at a time
+
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
