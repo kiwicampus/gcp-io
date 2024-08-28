@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gcp-io-util"
-version = "0.1.0"
+version = "0.1.1"
 description = "GCS io utility functions"
 authors = ["Carlos Alvarez <candres.alv@gmail.com>"]
 license = "MIT"
@@ -10,11 +10,11 @@ packages = [{include = "gcp_io"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-numpy = "<2.1.0"
 pyyaml = "^6.0.2"
 google-cloud-storage = "^2.18.2"
 imageio = "<=2.10.2"
 imageio-ffmpeg = "<=0.4.5"
+numpy = "<2.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
