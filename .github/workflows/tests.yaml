@@ -2,9 +2,7 @@
 name: GitHub CI
 on:
   push:
-    # Sequence of patterns matched against refs/heads
     branches:
-      # Push events on master branch
       - main
   pull_request:
 jobs:
@@ -13,32 +11,38 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7]
-        # python-version: [3.7, 3.8, 3.9]
+        python-version: [3.8]
+        # python-version: [3.8, 3.9, "3.10"]
+      max-parallel: 1  # Ensures that only one job runs at a time
+
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install Poetry 1.8.3
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          export PATH="$HOME/.local/bin:$PATH"
+          poetry self update 1.8.3
+
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v0'
+        uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
 
       - name: Install Dependencies
-        run: |
-          pip install -e .
-          pip install pytest pytest-cov
+        run: poetry install
 
       - name: Run Tests
-        # run: pytest test
-        run: pytest --cov=gcp_io --cov-report=term-missing --cov-report=xml
+        run: poetry run pytest --cov=gcp_io --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v2

@@ -1,4 +1,4 @@
 from .gcp_interface import GCPInterface
-from .utils import write_video, md5sum, read_yaml, signed2gcs
+from .utils import md5sum, read_yaml, signed2gcs, write_video
 
-__version__ = "0.0.5"
+__version__ = "0.1.0"

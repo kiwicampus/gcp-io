@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "gcp-io"
+version = "0.1.0"
+description = "GCS io utility functions"
+authors = ["Carlos Alvarez <candres.alv@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "gcp_io"}]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "<2.1.0"
+pyyaml = "^6.0.2"
+google-cloud-storage = "^2.18.2"
+imageio = "<=2.10.2"
+imageio-ffmpeg = "<=0.4.5"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
+pytest-cov = "^5.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

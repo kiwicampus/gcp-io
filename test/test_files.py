@@ -1,8 +1,7 @@
+import json
+import os
 import unittest
 import urllib.request
-import os
-import json
-from typing import Any, Dict
 
 from gcp_io import GCPInterface
 
