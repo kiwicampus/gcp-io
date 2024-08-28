@@ -36,6 +36,13 @@ jobs:
         with:
           credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
 
+
+      # Optional: Debugging step to confirm credentials are set
+      - name: Verify GCP Credentials
+        run: echo $GOOGLE_APPLICATION_CREDENTIALS
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
+
       - name: Install Dependencies
         run: poetry install
 
